@@ -92874,6 +92874,10 @@
                           "org"
                         ]
                       },
+                      "k8sNamespace": {
+                        "nullable": true,
+                        "type": "string"
+                      },
                       "createdAt": {
                         "type": "string",
                         "format": "date-time"
@@ -92954,6 +92958,7 @@
                       "organizationId",
                       "authorId",
                       "scope",
+                      "k8sNamespace",
                       "createdAt",
                       "updatedAt",
                       "labels",
@@ -93673,6 +93678,10 @@
                       "org"
                     ]
                   },
+                  "k8sNamespace": {
+                    "nullable": true,
+                    "type": "string"
+                  },
                   "labels": {
                     "type": "array",
                     "items": {
@@ -94224,6 +94233,10 @@
                         "org"
                       ]
                     },
+                    "k8sNamespace": {
+                      "nullable": true,
+                      "type": "string"
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time"
@@ -94304,6 +94317,7 @@
                     "organizationId",
                     "authorId",
                     "scope",
+                    "k8sNamespace",
                     "createdAt",
                     "updatedAt",
                     "labels",
@@ -95056,6 +95070,10 @@
                         "org"
                       ]
                     },
+                    "k8sNamespace": {
+                      "nullable": true,
+                      "type": "string"
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time"
@@ -95136,6 +95154,7 @@
                     "organizationId",
                     "authorId",
                     "scope",
+                    "k8sNamespace",
                     "createdAt",
                     "updatedAt",
                     "labels",
@@ -95849,6 +95868,10 @@
                       "org"
                     ]
                   },
+                  "k8sNamespace": {
+                    "nullable": true,
+                    "type": "string"
+                  },
                   "labels": {
                     "type": "array",
                     "items": {
@@ -96408,6 +96431,10 @@
                         "org"
                       ]
                     },
+                    "k8sNamespace": {
+                      "nullable": true,
+                      "type": "string"
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time"
@@ -96488,6 +96515,7 @@
                     "organizationId",
                     "authorId",
                     "scope",
+                    "k8sNamespace",
                     "createdAt",
                     "updatedAt",
                     "labels",
@@ -99353,6 +99381,259 @@
           "kind": "none",
           "note": "None (no additional RBAC permission required)",
           "permissions": []
+        }
+      }
+    },
+    "/api/k8s/namespaces": {
+      "get": {
+        "operationId": "listK8sNamespaces",
+        "tags": [
+          "K8s"
+        ],
+        "description": "List available Kubernetes namespaces in the cluster\n\nAuthentication:\n\nRequired. Use an authenticated browser session or send your Archestra API key in the `Authorization` header.\n\nAuthorization:\n\n`mcpServerInstallation:read`: View installed MCP servers and their status",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "namespaces": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "defaultNamespace": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "namespaces",
+                    "defaultNamespace"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "api_validation_error"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "type"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "api_authentication_error"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "type"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "api_authorization_error"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "type"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "api_not_found_error"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "type"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "api_conflict_error"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "type"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "api_internal_server_error"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "type"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "x-required-permissions": {
+          "kind": "static",
+          "permissions": [
+            "mcpServerInstallation:read"
+          ]
         }
       }
     },
@@ -121009,6 +121290,10 @@
                         "type": "string",
                         "format": "date-time"
                       },
+                      "k8sNamespace": {
+                        "nullable": true,
+                        "type": "string"
+                      },
                       "createdAt": {
                         "type": "string",
                         "format": "date-time"
@@ -121100,6 +121385,7 @@
                       "localInstallationError",
                       "oauthRefreshError",
                       "oauthRefreshFailedAt",
+                      "k8sNamespace",
                       "createdAt",
                       "updatedAt"
                     ],
@@ -121389,6 +121675,9 @@
                   "oauthRefreshFailedAt": {
                     "nullable": true
                   },
+                  "k8sNamespace": {
+                    "type": "string"
+                  },
                   "userId": {
                     "type": "string"
                   },
@@ -121503,6 +121792,10 @@
                       "type": "string",
                       "format": "date-time"
                     },
+                    "k8sNamespace": {
+                      "nullable": true,
+                      "type": "string"
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time"
@@ -121594,6 +121887,7 @@
                     "localInstallationError",
                     "oauthRefreshError",
                     "oauthRefreshFailedAt",
+                    "k8sNamespace",
                     "createdAt",
                     "updatedAt"
                   ],
@@ -121913,6 +122207,10 @@
                       "type": "string",
                       "format": "date-time"
                     },
+                    "k8sNamespace": {
+                      "nullable": true,
+                      "type": "string"
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time"
@@ -122004,6 +122302,7 @@
                     "localInstallationError",
                     "oauthRefreshError",
                     "oauthRefreshFailedAt",
+                    "k8sNamespace",
                     "createdAt",
                     "updatedAt"
                   ],
@@ -122614,6 +122913,10 @@
                       "type": "string",
                       "format": "date-time"
                     },
+                    "k8sNamespace": {
+                      "nullable": true,
+                      "type": "string"
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time"
@@ -122705,6 +123008,7 @@
                     "localInstallationError",
                     "oauthRefreshError",
                     "oauthRefreshFailedAt",
+                    "k8sNamespace",
                     "createdAt",
                     "updatedAt"
                   ],
@@ -123907,6 +124211,10 @@
                       "type": "string",
                       "format": "date-time"
                     },
+                    "k8sNamespace": {
+                      "nullable": true,
+                      "type": "string"
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time"
@@ -123998,6 +124306,7 @@
                     "localInstallationError",
                     "oauthRefreshError",
                     "oauthRefreshFailedAt",
+                    "k8sNamespace",
                     "createdAt",
                     "updatedAt"
                   ],
