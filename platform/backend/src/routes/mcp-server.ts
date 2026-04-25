@@ -131,6 +131,8 @@ const mcpServerRoutes: FastifyPluginAsyncZod = async (fastify) => {
           isByosVault: z.boolean().optional(),
           // Kubernetes service account override for local MCP servers
           serviceAccount: z.string().optional(),
+          // Kubernetes namespace override for local MCP servers
+          k8sNamespace: z.string().optional(),
         }),
         response: constructResponseSchema(SelectMcpServerSchema),
       },
@@ -144,6 +146,7 @@ const mcpServerRoutes: FastifyPluginAsyncZod = async (fastify) => {
         userConfigValues,
         environmentValues,
         serviceAccount,
+        k8sNamespace,
         ...restDataFromRequestBody
       } = body;
       const serverData: typeof restDataFromRequestBody & {
@@ -222,6 +225,43 @@ const mcpServerRoutes: FastifyPluginAsyncZod = async (fastify) => {
                 "You can only create MCP server installations for teams you are a member of",
               );
             }
+          }
+        }
+
+        // Validate k8sNamespace: reject early before idempotent early-return paths
+        if (k8sNamespace && catalogItem.serverType !== "local") {
+          throw new ApiError(
+            400,
+            "k8sNamespace can only be specified for local MCP servers",
+          );
+        }
+        if (catalogItem.serverType === "local" && k8sNamespace) {
+          // need to list namespaces to reject non-existing because
+          // canWriteToNamespace returns allowed: true for them
+          const availableNamespaces =
+            await McpServerRuntimeManager.listNamespaces();
+          if (!availableNamespaces.includes(k8sNamespace)) {
+            throw new ApiError(
+              400,
+              `Kubernetes namespace "${k8sNamespace}" does not exist in the cluster.`,
+            );
+          }
+
+          let canWrite: boolean;
+          try {
+            canWrite =
+              await McpServerRuntimeManager.canWriteToNamespace(k8sNamespace);
+          } catch (err) {
+            throw new ApiError(
+              500,
+              `Failed to verify access to Kubernetes namespace "${k8sNamespace}": ${err instanceof Error ? err.message : String(err)}`,
+            );
+          }
+          if (!canWrite) {
+            throw new ApiError(
+              400,
+              `No write access to Kubernetes namespace "${k8sNamespace}". Ensure the service account has permission to create deployments there.`,
+            );
           }
         }
 
@@ -606,6 +646,7 @@ const mcpServerRoutes: FastifyPluginAsyncZod = async (fastify) => {
       const mcpServer = await McpServerModel.create({
         ...serverData,
         ...(secretId && { secretId }),
+        ...(k8sNamespace && { k8sNamespace }),
       });
 
       try {
