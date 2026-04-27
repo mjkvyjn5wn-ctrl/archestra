@@ -474,6 +474,8 @@ const installMcpServer = async (
     environmentValues?: Record<string, string>;
     accessToken?: string;
     agentIds?: string[];
+    k8sClusterId?: string;
+    k8sNamespace?: string;
   },
 ) =>
   makeApiRequest({

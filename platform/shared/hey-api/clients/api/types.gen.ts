@@ -32568,6 +32568,7 @@ export type InstallMcpServerData = {
         isByosVault?: boolean;
         serviceAccount?: string;
         k8sClusterId?: string;
+        k8sNamespace?: string;
     };
     path?: never;
     query?: never;
