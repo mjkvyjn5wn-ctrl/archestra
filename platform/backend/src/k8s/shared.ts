@@ -100,6 +100,41 @@ export function loadKubeConfig(): {
 }
 
 /**
+ * Loads and validates a KubeConfig from a raw YAML string.
+ * Throws descriptive errors for invalid or incomplete kubeconfig content.
+ */
+export function loadKubeConfigFromString(kubeconfigYaml: string): k8s.KubeConfig {
+  const kc = new k8s.KubeConfig();
+
+  try {
+    kc.loadFromString(kubeconfigYaml);
+  } catch {
+    throw new Error("Malformed kubeconfig: could not parse YAML");
+  }
+
+  if (!kc.clusters || kc.clusters.length === 0) {
+    throw new Error("Invalid kubeconfig: clusters section missing or empty");
+  }
+
+  const c0 = kc.clusters[0];
+  if (!c0?.name || !c0?.server) {
+    throw new Error(
+      "Invalid kubeconfig: cluster entry is missing required fields (name, server)",
+    );
+  }
+
+  if (!kc.contexts || kc.contexts.length === 0) {
+    throw new Error("Invalid kubeconfig: contexts section missing or empty");
+  }
+
+  if (!kc.users || kc.users.length === 0) {
+    throw new Error("Invalid kubeconfig: users section missing or empty");
+  }
+
+  return kc;
+}
+
+/**
  * Creates all K8s API clients from a loaded KubeConfig.
  */
 export function createK8sClients(

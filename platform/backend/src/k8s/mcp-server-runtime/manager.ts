@@ -1,7 +1,8 @@
-import type * as k8s from "@kubernetes/client-node";
+import * as k8s from "@kubernetes/client-node";
 import {
   createK8sClients,
   loadKubeConfig,
+  loadKubeConfigFromString,
   sanitizeLabelValue,
 } from "@/k8s/shared";
 import logger from "@/logging";
@@ -11,7 +12,7 @@ import {
   McpServerModel,
 } from "@/models";
 import { secretManager } from "@/secrets-manager";
-import type { McpServer } from "@/types";
+import type { K8sCluster, McpServer } from "@/types";
 import K8sDeployment, {
   fetchPlatformPodNodeSelector,
   fetchPlatformPodTolerations,
@@ -154,6 +155,68 @@ export class McpServerRuntimeManager {
       this.status = "error";
       this.onRuntimeStartupError(new Error(errorMsg));
       throw error;
+    }
+  }
+
+  /**
+   * Returns the default K8s namespace from platform configuration.
+   */
+  getDefaultNamespace(): string {
+    return this.namespace;
+  }
+
+  /**
+   * Lists all namespaces available in the given cluster (or default cluster if none specified).
+   * Returns names sorted alphabetically.
+   */
+  async listNamespaces(cluster?: K8sCluster | null): Promise<string[]> {
+    const api = cluster
+      ? await getClusterCoreApi(cluster)
+      : this.k8sApi;
+
+    if (!api) {
+      throw new Error("Kubernetes API client not initialized");
+    }
+
+    const response = await api.listNamespace();
+    return (response.items ?? [])
+      .map((ns) => ns.metadata?.name ?? "")
+      .filter(Boolean)
+      .sort();
+  }
+
+  /**
+   * Checks whether the service account has permission to create deployments in the given namespace.
+   */
+  async canWriteToNamespace(
+    namespace: string,
+    cluster?: K8sCluster | null,
+  ): Promise<boolean> {
+    let authApi: k8s.AuthorizationV1Api;
+    if (cluster) {
+      const kc = loadKubeConfigFromString(cluster.kubeconfig);
+      authApi = kc.makeApiClient(k8s.AuthorizationV1Api);
+    } else {
+      const { kubeConfig } = loadKubeConfig();
+      authApi = kubeConfig.makeApiClient(k8s.AuthorizationV1Api);
+    }
+
+    try {
+      const response = await authApi.createSelfSubjectAccessReview({
+        body: {
+          spec: {
+            resourceAttributes: {
+              namespace,
+              verb: "create",
+              resource: "deployments",
+              group: "apps",
+            },
+          },
+        },
+      });
+      return response.status?.allowed === true;
+    } catch {
+      return false;
     }
   }
 
@@ -875,3 +938,10 @@ export class McpServerRuntimeManager {
 }
 
 export default new McpServerRuntimeManager();
+
+async function getClusterCoreApi(
+  cluster: K8sCluster,
+): Promise<k8s.CoreV1Api> {
+  const kc = loadKubeConfigFromString(cluster.kubeconfig);
+  return kc.makeApiClient(k8s.CoreV1Api);
+}
