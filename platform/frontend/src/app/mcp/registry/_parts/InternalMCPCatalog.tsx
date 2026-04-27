@@ -701,6 +701,7 @@ export function InternalMCPCatalog({
       isByosVault: installResult.isByosVault,
       teamId: installResult.teamId ?? undefined,
       serviceAccount: installResult.serviceAccount,
+      k8sClusterId: installResult.k8sClusterId ?? undefined,
       dontShowToast: true,
     });
 

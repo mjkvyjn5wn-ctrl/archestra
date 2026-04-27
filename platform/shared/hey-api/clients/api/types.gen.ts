@@ -26681,6 +26681,205 @@ export type GetK8sImagePullSecretsResponses = {
 
 export type GetK8sImagePullSecretsResponse = GetK8sImagePullSecretsResponses[keyof GetK8sImagePullSecretsResponses];
 
+export type ListK8sClustersData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/k8s/clusters';
+};
+
+export type ListK8sClustersErrors = {
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type ListK8sClustersError = ListK8sClustersErrors[keyof ListK8sClustersErrors];
+
+export type ListK8sClustersResponses = {
+    /**
+     * List of clusters
+     */
+    200: {
+        clusters: Array<{
+            id: string | null;
+            name: string;
+            createdAt: string;
+        }>;
+    };
+};
+
+export type ListK8sClustersResponse = ListK8sClustersResponses[keyof ListK8sClustersResponses];
+
+export type CreateK8sClusterData = {
+    body: {
+        name: string;
+        kubeconfig: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/k8s/clusters';
+};
+
+export type CreateK8sClusterErrors = {
+    400: {
+        error: {
+            message: string;
+            type: 'api_validation_error';
+        };
+    };
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type CreateK8sClusterError = CreateK8sClusterErrors[keyof CreateK8sClusterErrors];
+
+export type CreateK8sClusterResponses = {
+    /**
+     * Cluster created
+     */
+    201: {
+        id: string;
+        organizationId: string;
+        name: string;
+        kubeconfig: string;
+        createdAt: string;
+        updatedAt: string;
+    };
+};
+
+export type CreateK8sClusterResponse = CreateK8sClusterResponses[keyof CreateK8sClusterResponses];
+
+export type DeleteK8sClusterData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/k8s/clusters/{id}';
+};
+
+export type DeleteK8sClusterErrors = {
+    400: {
+        error: {
+            message: string;
+            type: 'api_validation_error';
+        };
+    };
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    404: {
+        error: {
+            message: string;
+            type: 'api_not_found_error';
+        };
+    };
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type DeleteK8sClusterError = DeleteK8sClusterErrors[keyof DeleteK8sClusterErrors];
+
+export type DeleteK8sClusterResponses = {
+    /**
+     * Cluster deleted
+     */
+    200: {
+        success: boolean;
+    };
+};
+
+export type DeleteK8sClusterResponse = DeleteK8sClusterResponses[keyof DeleteK8sClusterResponses];
+
+export type ListK8sNamespacesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        clusterId?: string;
+    };
+    url: '/api/k8s/namespaces';
+};
+
+export type ListK8sNamespacesErrors = {
+    401: {
+        error: {
+            message: string;
+            type: 'api_authentication_error';
+        };
+    };
+    403: {
+        error: {
+            message: string;
+            type: 'api_authorization_error';
+        };
+    };
+    500: {
+        error: {
+            message: string;
+            type: 'api_internal_server_error';
+        };
+    };
+};
+
+export type ListK8sNamespacesError = ListK8sNamespacesErrors[keyof ListK8sNamespacesErrors];
+
+export type ListK8sNamespacesResponses = {
+    /**
+     * List of namespaces
+     */
+    200: {
+        namespaces: Array<string>;
+        defaultNamespace: string;
+    };
+};
+
+export type ListK8sNamespacesResponse = ListK8sNamespacesResponses[keyof ListK8sNamespacesResponses];
+
 export type GetInternalMcpCatalogLabelKeysData = {
     body?: never;
     path?: never;
@@ -32368,6 +32567,7 @@ export type InstallMcpServerData = {
         accessToken?: string;
         isByosVault?: boolean;
         serviceAccount?: string;
+        k8sClusterId?: string;
     };
     path?: never;
     query?: never;
