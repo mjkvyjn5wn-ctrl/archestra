@@ -4,10 +4,12 @@ import {
   loadKubeConfig,
   loadKubeConfigFromString,
   sanitizeLabelValue,
+  type K8sClients,
 } from "@/k8s/shared";
 import logger from "@/logging";
 import {
   InternalMcpCatalogModel,
+  K8sClusterModel,
   McpHttpSessionModel,
   McpServerModel,
 } from "@/models";
@@ -270,6 +272,30 @@ export class McpServerRuntimeManager {
         throw new Error("Kubernetes clients not initialized");
       }
 
+      // Resolve custom cluster if specified; fall back to platform (default) clients
+      let clusterClients: K8sClients | null = null;
+      if (mcpServer.k8sClusterId) {
+        const cluster = await K8sClusterModel.findByIdInternal(
+          mcpServer.k8sClusterId,
+        );
+        if (cluster) {
+          const kc = loadKubeConfigFromString(cluster.kubeconfig);
+          clusterClients = createK8sClients(kc, this.namespace);
+        }
+      }
+
+      const activeK8sApi = clusterClients?.coreApi ?? this.k8sApi;
+      const activeK8sAppsApi = clusterClients?.appsApi ?? this.k8sAppsApi;
+      const activeK8sAttach = clusterClients
+        ? new k8s.Attach(clusterClients.kubeConfig)
+        : this.k8sAttach;
+      const activeK8sLog = clusterClients
+        ? new k8s.Log(clusterClients.kubeConfig)
+        : this.k8sLog;
+      const activeK8sExec = clusterClients
+        ? new k8s.Exec(clusterClients.kubeConfig)
+        : this.k8sExec;
+
       // If environmentValues not provided but server has a secretId,
       // fetch the secret values to use as environmentValues.
       // This is critical for restarts where env values need to be preserved
@@ -336,15 +362,16 @@ export class McpServerRuntimeManager {
 
       const k8sDeployment = new K8sDeployment({
         mcpServer,
-        k8sApi: this.k8sApi,
-        k8sAppsApi: this.k8sAppsApi,
-        k8sAttach: this.k8sAttach,
-        k8sLog: this.k8sLog,
+        k8sApi: activeK8sApi,
+        k8sAppsApi: activeK8sAppsApi,
+        k8sAttach: activeK8sAttach,
+        k8sLog: activeK8sLog,
         namespace: this.namespace,
         catalogItem,
         userConfigValues,
         environmentValues: effectiveEnvironmentValues,
-        k8sExec: this.k8sExec,
+        k8sExec: activeK8sExec,
+        inheritPlatformScheduling: !clusterClients,
       });
 
       // Register the deployment BEFORE starting it
@@ -480,18 +507,43 @@ export class McpServerRuntimeManager {
         return undefined;
       }
 
+      // Resolve custom cluster if specified; fall back to platform (default) clients
+      let lazyClusterClients: K8sClients | null = null;
+      if (mcpServer.k8sClusterId) {
+        const cluster = await K8sClusterModel.findByIdInternal(
+          mcpServer.k8sClusterId,
+        );
+        if (cluster) {
+          const kc = loadKubeConfigFromString(cluster.kubeconfig);
+          lazyClusterClients = createK8sClients(kc, this.namespace);
+        }
+      }
+
+      const lazyK8sApi = lazyClusterClients?.coreApi ?? this.k8sApi;
+      const lazyK8sAppsApi = lazyClusterClients?.appsApi ?? this.k8sAppsApi;
+      const lazyK8sAttach = lazyClusterClients
+        ? new k8s.Attach(lazyClusterClients.kubeConfig)
+        : this.k8sAttach;
+      const lazyK8sLog = lazyClusterClients
+        ? new k8s.Log(lazyClusterClients.kubeConfig)
+        : this.k8sLog;
+      const lazyK8sExec = lazyClusterClients
+        ? new k8s.Exec(lazyClusterClients.kubeConfig)
+        : this.k8sExec;
+
       // Create the K8sDeployment object and register it
       // Note: We don't call startOrCreateDeployment() because the deployment
       // should already exist in K8s (created by another replica)
       const k8sDeployment = new K8sDeployment({
         mcpServer,
-        k8sApi: this.k8sApi,
-        k8sAppsApi: this.k8sAppsApi,
-        k8sAttach: this.k8sAttach,
-        k8sLog: this.k8sLog,
+        k8sApi: lazyK8sApi,
+        k8sAppsApi: lazyK8sAppsApi,
+        k8sAttach: lazyK8sAttach,
+        k8sLog: lazyK8sLog,
         namespace: this.namespace,
         catalogItem,
-        k8sExec: this.k8sExec,
+        k8sExec: lazyK8sExec,
+        inheritPlatformScheduling: !lazyClusterClients,
       });
 
       // Resolve HTTP endpoint URL (for streamable-http servers started by another replica)

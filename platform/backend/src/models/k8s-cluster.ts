@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, count, eq } from "drizzle-orm";
 import db, { schema } from "@/database";
 import { ApiError } from "@/types";
 import type { InsertK8sCluster, K8sCluster } from "@/types";
@@ -61,11 +61,25 @@ class K8sClusterModel {
         ),
       );
   }
+
+  // For internal runtime use only — bypasses org scoping since the cluster
+  // was already validated at creation time.
+  static async findByIdInternal(id: string): Promise<K8sCluster | null> {
+    const [cluster] = await db
+      .select()
+      .from(schema.k8sClustersTable)
+      .where(eq(schema.k8sClustersTable.id, id))
+      .limit(1);
+    return cluster ?? null;
+  }
 }
 
 export default K8sClusterModel;
 
-// Stage 2 will add k8sClusterId to mcpServersTable; until then this returns 0.
-async function countMcpServersByClusterId(_clusterId: string): Promise<number> {
-  return 0;
+async function countMcpServersByClusterId(clusterId: string): Promise<number> {
+  const [row] = await db
+    .select({ total: count() })
+    .from(schema.mcpServersTable)
+    .where(eq(schema.mcpServersTable.k8sClusterId, clusterId));
+  return row?.total ?? 0;
 }

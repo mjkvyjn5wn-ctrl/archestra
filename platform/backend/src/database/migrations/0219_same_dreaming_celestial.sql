@@ -1,0 +1,2 @@
+ALTER TABLE "mcp_server" ADD COLUMN "k8s_cluster_id" uuid;--> statement-breakpoint
+ALTER TABLE "mcp_server" ADD CONSTRAINT "mcp_server_k8s_cluster_id_k8s_cluster_id_fk" FOREIGN KEY ("k8s_cluster_id") REFERENCES "public"."k8s_cluster"("id") ON DELETE set null ON UPDATE no action;

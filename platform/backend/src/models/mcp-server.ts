@@ -6,9 +6,10 @@ import { McpServerRuntimeManager } from "@/k8s/mcp-server-runtime";
 import logger from "@/logging";
 import { secretManager } from "@/secrets-manager";
 import { computeSecretStorageType } from "@/secrets-manager/utils";
-import type { InsertMcpServer, McpServer, UpdateMcpServer } from "@/types";
+import type { InsertMcpServer, K8sCluster, McpServer, UpdateMcpServer } from "@/types";
 import AgentToolModel from "./agent-tool";
 import InternalMcpCatalogModel from "./internal-mcp-catalog";
+import K8sClusterModel from "./k8s-cluster";
 import McpHttpSessionModel from "./mcp-http-session";
 import McpServerUserModel from "./mcp-server-user";
 import ToolModel from "./tool";
@@ -382,6 +383,58 @@ class McpServerModel {
       .returning();
 
     return updatedServer || null;
+  }
+
+  /**
+   * Resolve the organizationId for an MCP server by joining through team or member.
+   * Used by background/runtime flows where organizationId is not on the server row.
+   */
+  static async resolveOrganizationId(serverId: string): Promise<string | null> {
+    const [row] = await db
+      .select({ organizationId: schema.teamsTable.organizationId })
+      .from(schema.mcpServersTable)
+      .innerJoin(
+        schema.teamsTable,
+        eq(schema.mcpServersTable.teamId, schema.teamsTable.id),
+      )
+      .where(eq(schema.mcpServersTable.id, serverId))
+      .limit(1);
+
+    if (row) return row.organizationId;
+
+    const [personalRow] = await db
+      .select({ organizationId: schema.membersTable.organizationId })
+      .from(schema.mcpServersTable)
+      .innerJoin(
+        schema.membersTable,
+        eq(schema.mcpServersTable.ownerId, schema.membersTable.userId),
+      )
+      .where(eq(schema.mcpServersTable.id, serverId))
+      .limit(1);
+
+    return personalRow?.organizationId ?? null;
+  }
+
+  /**
+   * Returns the server, its resolved organizationId, and its custom cluster (if any).
+   * Single source of truth for runtime cluster resolution in startServer/restartServer flows.
+   */
+  static async findWithClusterContext(id: string): Promise<{
+    server: McpServer;
+    organizationId: string | null;
+    cluster: K8sCluster | null;
+  } | null> {
+    const server = await McpServerModel.findById(id);
+    if (!server) return null;
+
+    const organizationId = await McpServerModel.resolveOrganizationId(id);
+
+    let cluster: K8sCluster | null = null;
+    if (server.k8sClusterId) {
+      cluster = await K8sClusterModel.findByIdInternal(server.k8sClusterId);
+    }
+
+    return { server, organizationId, cluster };
   }
 
   static async delete(id: string): Promise<boolean> {

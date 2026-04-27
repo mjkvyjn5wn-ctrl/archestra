@@ -135,7 +135,7 @@ const mcpServerRoutes: FastifyPluginAsyncZod = async (fastify) => {
         response: constructResponseSchema(SelectMcpServerSchema),
       },
     },
-    async ({ body, user, headers }, reply) => {
+    async ({ body, user, headers, organizationId }, reply) => {
       let {
         agentIds,
         secretId,
@@ -156,6 +156,18 @@ const mcpServerRoutes: FastifyPluginAsyncZod = async (fastify) => {
       // Set owner_id and userId to current user
       serverData.ownerId = user.id;
       serverData.userId = user.id;
+
+      // Validate k8sClusterId belongs to the organization
+      if (serverData.k8sClusterId) {
+        const { K8sClusterModel } = await import("@/models");
+        const cluster = await K8sClusterModel.findById(
+          serverData.k8sClusterId,
+          organizationId,
+        );
+        if (!cluster) {
+          throw new ApiError(400, "K8s cluster not found or does not belong to this organization");
+        }
+      }
 
       // Track if we created a new secret (for cleanup on failure)
       let createdSecretId: string | undefined;

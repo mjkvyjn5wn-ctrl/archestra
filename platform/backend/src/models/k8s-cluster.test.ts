@@ -1,3 +1,4 @@
+import db, { schema } from "@/database";
 import { afterEach, beforeEach, describe, expect, test } from "@/test";
 import { K8sClusterModel } from "@/models";
 
@@ -148,6 +149,34 @@ describe("K8sClusterModel", () => {
       // cluster should still exist
       const found = await K8sClusterModel.findById(cluster.id, otherOrg.id);
       expect(found).not.toBeNull();
+    });
+
+    test("throws ApiError when cluster is referenced by an MCP server", async () => {
+      const cluster = await K8sClusterModel.create({
+        organizationId,
+        name: "In Use",
+        kubeconfig: VALID_KUBECONFIG,
+      });
+
+      // Directly insert an MCP server referencing the cluster
+      const catalog = await db
+        .insert(schema.internalMcpCatalogTable)
+        .values({
+          name: "test-catalog",
+          serverType: "local",
+          localConfig: { command: "node", arguments: [] },
+        })
+        .returning();
+      await db.insert(schema.mcpServersTable).values({
+        name: "server-using-cluster",
+        serverType: "local",
+        catalogId: catalog[0]!.id,
+        k8sClusterId: cluster.id,
+      });
+
+      await expect(
+        K8sClusterModel.delete(cluster.id, organizationId),
+      ).rejects.toMatchObject({ statusCode: 400 });
     });
   });
 });
